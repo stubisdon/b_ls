@@ -12,21 +12,21 @@
 
 #include "ft_ls.h"
 
-// void			print_mode(mode_t mode)
-// {
-// 	const char	chars[] = "rwxrwxrwx";
-// 	char		buf[10];
-// 	size_t		i;
-//
-// 	i = 0;
-// 	while (i < 9)
-// 	{
-// 		buf[i] = (mode & (1 << (8 - i))) ? chars[i] : '-';
-// 		i++;
-// 	}
-// 	buf[9] = '\0';
-// 	ft_printf("%s ", buf);
-// }
+void			print_mode(mode_t mode)
+{
+	const char	chars[] = "rwxrwxrwx";
+	char		buf[10];
+	size_t		i;
+
+	i = 0;
+	while (i < 9)
+	{
+		buf[i] = (mode & (1 << (8 - i))) ? chars[i] : '-';
+		i++;
+	}
+	buf[9] = '\0';
+	printf("%s ", buf);
+}
 //
 // void			select_type(mode_t mode, char *c)
 // {
@@ -64,25 +64,31 @@ node    *createEmptyList(node *info)
     return (info);
 }
 
-void appendToList(node *info, char *data, int perm, char *mtime, char *uid, char *gid, unsigned int links, long long size, long long blocks)
+void appendToList(node *info, struct dirent sd, struct stat buf)
 {
     node *temp = NULL;
 
     while(info->next != NULL)
         info = info->next;
     temp = (node *)malloc(sizeof(node));
-    temp->d_name = strdup(data);
-    temp->perm = perm;
+    temp->buf = buf;
+    temp->sd = sd;
+    temp->d_name = strdup(sd.d_name);
+    temp->perm = buf.st_mode;
     temp->mode = (char *)malloc(sizeof(char) * 12);
     strmode(temp->perm, temp->mode);
-    temp->size = size;
-    temp->mtime = strdup(mtime + 4);
-    temp->uid = uid;
-    temp->gid = gid;
-    temp->blocks = blocks;
-    temp->links = links;
+    temp->size = buf.st_size;
+    temp->mtime = strdup(ctime(&buf.st_mtime) + 4);
+    temp->uid = getpwuid(buf.st_uid)->pw_name;
+    temp->gid = getgrgid(buf.st_gid)->gr_name;
+    temp->blocks = buf.st_blocks;
+    temp->links = buf.st_nlink;
     temp->next = NULL;
     info->next = temp;
+
+    // sd->d_name, buf.st_mode, ctime(&buf.st_mtime),
+    //  getpwuid(buf.st_uid)->pw_name, getgrgid(buf.st_gid)->gr_name,
+    //   buf.st_nlink, buf.st_size, buf.st_blocks
 }
 
 
@@ -93,6 +99,7 @@ void listDir(node *info, int flags[4])
 
     temp = info;
     info = info->next;
+    info = name_sort(info, 1);
     if (flags[l] < 1 && flags[a] < 1 && flags[t] < 1 && flags[r] < 1)
     {
         while (info != NULL)
@@ -114,6 +121,34 @@ void listDir(node *info, int flags[4])
         printf("total %lld\n", blocks);
         info = temp;
         info = info->next;
+        info = name_sort(info, 1);
+        while (info != NULL)
+        {
+            // printf("%4s", info->mode);
+            print_mode(info->perm);
+            printf("%3u ", info->links);
+            printf("%s  ", info->uid);
+            printf("%s ", info->gid);
+            printf("%6lld ", info->size);
+            printf("%.12s ", info->mtime);
+            printf("%s\n", info->d_name);
+            info = info->next;
+        }
+    }
+    if (flags[l] == 1 && flags[a] == 1 && flags[t] == 1 && flags[r] == 0)
+    {
+        info = temp;
+        blocks = 0;
+        while (info != NULL)
+        {
+            blocks += info->blocks;
+            info = info->next;
+        }
+        printf("total %lld\n", blocks);
+        info = temp;
+        info = info->next;
+        info = name_sort(info, 1);
+        info = time_sort(info, 1);
         while (info != NULL)
         {
             printf("%4s", info->mode);

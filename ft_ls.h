@@ -26,6 +26,7 @@
 typedef struct      s_file
 {
     struct stat     buf;
+    struct dirent   sd;
     int             perm;
     char            *mode;
     unsigned int    links;
@@ -49,7 +50,10 @@ enum flags
 void findFlags(int flags[4], char *str);
 node *getDir(char *path, node *info);
 node *createEmptyList(node *info);
-void appendToList(node *info, char *data, int perm, char *mtime, char *uid, char *gid, unsigned int links, long long size, long long blocks);
+void appendToList(node *info, struct dirent sd, struct stat buf);
 void listDir(node *info, int flags[4]);
+node *time_sort(node *info, int is_asc);
+node *name_sort(node *info, int is_asc);
+char	*ft_strjoin(char const *s1, char const *s2);
 
 #endif

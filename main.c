@@ -51,9 +51,7 @@ node *getDir(char *path, node *info)
     while ((sd=readdir(dir)) != NULL)
     {
         stat(sd->d_name, &buf);
-        appendToList(info, sd->d_name, buf.st_mode, ctime(&buf.st_mtime),
-         getpwuid(buf.st_uid)->pw_name, getgrgid(buf.st_gid)->gr_name,
-          buf.st_nlink, buf.st_size, buf.st_blocks);
+        appendToList(info, *sd, buf);
     }
     closedir(dir);
     return (info);
